@@ -25,7 +25,7 @@ pub fn qr(content: &str) -> Vec<u8> {
 #[cfg_attr(feature = "wasm-bindgen", wasm_bindgen)]
 #[derive(Debug, Clone)]
 pub struct SvgOptions {
-    shape: convert::Shape,
+    shape: convert::ModuleShape,
     module_color: Vec<u8>,
     margin: usize,
 
@@ -59,7 +59,7 @@ impl SvgOptions {
     }
 
     /// Updates the shape of the QRCode modules.
-    pub fn shape(self, shape: convert::Shape) -> Self {
+    pub fn shape(self, shape: convert::ModuleShape) -> Self {
         Self { shape, ..self }
     }
 
@@ -149,7 +149,7 @@ impl SvgOptions {
     #[cfg_attr(feature = "wasm-bindgen", wasm_bindgen(constructor))]
     pub fn new() -> Self {
         Self {
-            shape: convert::Shape::Square,
+            shape: convert::ModuleShape::Square,
             module_color: vec![0, 0, 0, 255],
             margin: 4,
 
@@ -173,7 +173,7 @@ pub fn qr_svg(content: &str, options: SvgOptions) -> String {
     let qrcode = QRCode::new(content.as_bytes(), None, None, None);
 
     let mut builder = SvgBuilder::default();
-    builder.shape(options.shape);
+    builder.module_shape(options.shape);
     builder.margin(options.margin);
     builder.background_color(options.background_color);
     builder.module_color(options.module_color);

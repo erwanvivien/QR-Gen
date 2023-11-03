@@ -21,9 +21,11 @@
 //! # }
 //! ```
 
-use crate::{QRCode, Version};
+use crate::{convert::EyePosition, ModuleType, QRCode, Version};
 
-use super::{Builder, Color, ImageBackgroundShape, ModuleFunction, Shape};
+use super::{
+    module_shape::ModuleFunction, Builder, Color, EyeFrameShape, ImageBackgroundShape, ModuleShape,
+};
 
 /// Builder for svg, can set shape, margin, background_color, dot_color
 pub struct SvgBuilder {
@@ -40,6 +42,12 @@ pub struct SvgBuilder {
     background_color: Color,
     /// The color for each module, default is #000000
     dot_color: Color,
+
+    // Eye Frame
+    /// Eye Frame Shape
+    eye_frame_shape: EyeFrameShape,
+    /// Eye Frame Color
+    eye_frame_color: Color,
 
     // Image Embedding
     /// Image to embed in the svg, can be a path or a base64 string
@@ -74,6 +82,9 @@ impl Default for SvgBuilder {
             commands: Vec::new(),
             command_colors: Vec::new(),
 
+            eye_frame_shape: EyeFrameShape::Empty,
+            eye_frame_color: [0, 0, 0, 255].into(),
+
             // Image Embedding
             image: None,
             image_background_color: [255; 4].into(),
@@ -100,13 +111,13 @@ impl Builder for SvgBuilder {
         self
     }
 
-    fn shape(&mut self, shape: Shape) -> &mut Self {
+    fn module_shape(&mut self, shape: ModuleShape) -> &mut Self {
         self.commands.push(*shape);
         self.command_colors.push(None);
         self
     }
 
-    fn shape_color<C: Into<Color>>(&mut self, shape: Shape, color: C) -> &mut Self {
+    fn module_shape_color<C: Into<Color>>(&mut self, shape: ModuleShape, color: C) -> &mut Self {
         self.commands.push(*shape);
         self.command_colors.push(Some(color.into()));
         self
@@ -139,9 +150,38 @@ impl Builder for SvgBuilder {
         self.image_position = Some((x, y));
         self
     }
+
+    fn eye_frame_shape(&mut self, shape: EyeFrameShape) -> &mut Self {
+        self.eye_frame_shape = shape;
+        self
+    }
+
+    fn eye_frame_shape_color<C: Into<Color>>(
+        &mut self,
+        shape: EyeFrameShape,
+        color: C,
+    ) -> &mut Self {
+        self.eye_frame_shape = shape;
+        self.eye_frame_color = color.into();
+        self
+    }
 }
 
 impl SvgBuilder {
+    /// Return the coordinates of the eye according to the eye position
+    ///
+    /// Return (x, y)
+    fn eye_placement(&self, qr: &QRCode, eye_position: EyePosition) -> (usize, usize) {
+        let margin = self.margin;
+        let offset = qr.size + margin - 7;
+
+        match eye_position {
+            EyePosition::TopLeft => (margin, margin),
+            EyePosition::TopRight => (offset, margin),
+            EyePosition::BottomLeft => (margin, offset),
+        }
+    }
+
     fn image_placement(
         image_background_shape: ImageBackgroundShape,
         margin: usize,
@@ -248,7 +288,7 @@ impl SvgBuilder {
     }
 
     fn path(&self, qr: &QRCode) -> String {
-        const DEFAULT_COMMAND: [ModuleFunction; 1] = [Shape::square];
+        const DEFAULT_COMMAND: [ModuleFunction; 1] = [ModuleShape::square];
         const DEFAULT_COMMAND_COLOR: [Option<Color>; 1] = [None];
 
         // TODO: cleanup this basic logic
@@ -275,6 +315,12 @@ impl SvgBuilder {
                     continue;
                 }
 
+                if self.eye_frame_shape != EyeFrameShape::Empty
+                    && cell.module_type() == ModuleType::FinderPattern
+                {
+                    continue;
+                }
+
                 for (i, command) in commands.iter().enumerate() {
                     paths[i].push_str(&command(x + self.margin, y + self.margin, cell));
                 }
@@ -285,7 +331,7 @@ impl SvgBuilder {
             let command_color = command_colors[i].as_ref().unwrap_or(&self.dot_color);
             // Allows to compare if two function pointers are the same
             // This works because there is no notion of Generics for `rounded_square`
-            if command as usize == Shape::rounded_square as usize {
+            if command as usize == ModuleShape::rounded_square as usize {
                 paths[i].push_str(&format!(
                     r##"" stroke-width=".3" stroke-linejoin="round" stroke="{}"##,
                     command_color.to_str()
@@ -293,6 +339,20 @@ impl SvgBuilder {
             }
 
             paths[i].push_str(&format!(r#"" fill="{}"/>"#, command_color.to_str()));
+        }
+
+        let mut finder_pattern_path = String::with_capacity(128);
+        if self.eye_frame_shape != EyeFrameShape::Empty {
+            for eye_position in EyePosition::ALL {
+                let (x, y) = self.eye_placement(qr, eye_position);
+
+                let eye_frame_shape_function = self.eye_frame_shape;
+                let eye_shape_str = eye_frame_shape_function(y, x, eye_position);
+
+                finder_pattern_path.push_str(&eye_shape_str);
+            }
+
+            paths.push(finder_pattern_path);
         }
 
         paths.join("")

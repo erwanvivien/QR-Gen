@@ -1,6 +1,6 @@
 fn main() {
     use fast_qr::{
-        convert::{image::ImageBuilder, Builder, ImageBackgroundShape, Shape},
+        convert::{image::ImageBuilder, Builder, ImageBackgroundShape, ModuleShape},
         QRBuilder, Version, ECL,
     };
 
@@ -11,7 +11,7 @@ fn main() {
         .unwrap();
 
     let mut _img = ImageBuilder::default()
-        .shape(Shape::Square)
+        .module_shape(ModuleShape::Square)
         .fit_width(600)
         .background_color([255, 255, 255, 255])
         // New: embed an image

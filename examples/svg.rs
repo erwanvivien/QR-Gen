@@ -1,6 +1,6 @@
 fn main() {
     use fast_qr::{
-        convert::{svg::SvgBuilder, Builder, Shape},
+        convert::{svg::SvgBuilder, Builder, EyeFrameShape, ModuleShape},
         QRBuilder, Version, ECL,
     };
 
@@ -11,6 +11,7 @@ fn main() {
         .unwrap();
 
     let _svg = SvgBuilder::default()
-        .shape(Shape::RoundedSquare)
+        .module_shape(ModuleShape::RoundedSquare)
+        .eye_frame_shape(EyeFrameShape::Square)
         .to_file(&qrcode, "svg.svg");
 }

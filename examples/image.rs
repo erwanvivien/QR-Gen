@@ -1,6 +1,6 @@
 fn main() {
     use fast_qr::{
-        convert::{image::ImageBuilder, Builder, Shape},
+        convert::{image::ImageBuilder, Builder, ModuleShape},
         QRBuilder, Version, ECL,
     };
 
@@ -11,14 +11,14 @@ fn main() {
         .unwrap();
 
     let _image = ImageBuilder::default()
-        .shape(Shape::RoundedSquare)
+        .module_shape(ModuleShape::RoundedSquare)
         .fit_width(600)
         .background_color([255, 255, 255, 0]) // transparency
         .to_file(&qrcode, "image.png");
 
     // Or maybe as bytes.
     let _image_as_bytes = ImageBuilder::default()
-        .shape(Shape::RoundedSquare)
+        .module_shape(ModuleShape::RoundedSquare)
         .fit_width(512)
         .background_color([255, 255, 255, 255]) // opaque
         .to_bytes(&qrcode);

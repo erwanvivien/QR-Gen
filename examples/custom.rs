@@ -1,6 +1,6 @@
 fn main() {
     use fast_qr::{
-        convert::{image::ImageBuilder, Builder, Shape},
+        convert::{image::ImageBuilder, Builder, ModuleShape},
         ModuleType, QRBuilder, Version, ECL,
     };
 
@@ -12,21 +12,21 @@ fn main() {
 
     let mut _img = ImageBuilder::default()
         // Can have many shapes and custom shapes
-        .shape(Shape::Command(|y, x, cell| {
+        .module_shape(ModuleShape::Command(|y, x, cell| {
             match cell.module_type() {
                 ModuleType::FinderPattern | ModuleType::Alignment => String::new(),
                 _ => {
                     // Works thanks to Deref
-                    Shape::Square(y, x, cell)
+                    ModuleShape::Square(y, x, cell)
                 }
             }
         }))
-        .shape_color(
-            Shape::Command(|y, x, cell| {
+        .module_shape_color(
+            ModuleShape::Command(|y, x, cell| {
                 match cell.module_type() {
                     ModuleType::FinderPattern | ModuleType::Alignment => {
                         // Works thanks to Deref
-                        Shape::Circle(y, x, cell)
+                        ModuleShape::Circle(y, x, cell)
                     }
                     _ => String::new(),
                 }
